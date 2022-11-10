@@ -111,7 +111,7 @@ void Encrypt()
 
     AppendToFile("C:/3/decrypt_name/Chipher_text", hash);
 }
-void DecryptAes(const std::vector<unsigned char> plainText, std::vector<unsigned char>& chipherText)
+void DecryptAes(const std::vector<unsigned char> chipherText, std::vector<unsigned char>& plainText, std::vector<unsigned char>& hash)
 {
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     if (!EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv))
@@ -119,26 +119,26 @@ void DecryptAes(const std::vector<unsigned char> plainText, std::vector<unsigned
         throw std::runtime_error("DecryptInit error");
     }
 
-    std::vector<unsigned char> chipherTextBuf(plainText.size() + AES_BLOCK_SIZE);
-    int chipherTextSize = 0;
-    if (!EVP_DecryptUpdate(ctx, &chipherTextBuf[0], &chipherTextSize, &plainText[0], plainText.size())) {
+    std::vector<unsigned char> plainTextTextBuf(chipherText.size() + AES_DECRYPT);
+    int plainTextSize = 0;
+
+    if (!EVP_DecryptUpdate(ctx, &plainTextTextBuf[0], &plainTextSize, &chipherText[0], chipherText.size() - hash.size())) {
         EVP_CIPHER_CTX_free(ctx);
         throw std::runtime_error("Decrypt error");
     }
 
     int lastPartLen = 0;
-    if (!EVP_DecryptFinal_ex(ctx, &chipherTextBuf[0] + chipherTextSize, &lastPartLen)) {
+    if (!EVP_DecryptFinal_ex(ctx, &plainTextTextBuf[0] + plainTextSize, &lastPartLen)) {
         EVP_CIPHER_CTX_free(ctx);
         throw std::runtime_error("DecryptFinal error");
     }
-    chipherTextSize += lastPartLen;
-    chipherTextBuf.erase(chipherTextBuf.begin() + chipherTextSize, chipherTextBuf.end());
+    plainTextSize += lastPartLen;
+    plainTextTextBuf.erase(plainTextTextBuf.begin() + plainTextSize, plainTextTextBuf.end());
 
-    chipherText.swap(chipherTextBuf);
+    plainText.swap(plainTextTextBuf);
 
     EVP_CIPHER_CTX_free(ctx);
 }
-
 void Decrypt()
 {
     std::vector<unsigned char> chipherText;
@@ -148,7 +148,7 @@ void Decrypt()
     CalculateHash(chipherText, hash);
 
     std::vector<unsigned char> plainText;
-    DecryptAes(chipherText, plainText);
+    DecryptAes(chipherText, plainText, hash);
 
     WriteFile("C:/3/decrypt_name/plain_text2", plainText);
 
@@ -165,6 +165,7 @@ int main()
         Encrypt();
         Decrypt();
     }
+
     catch (const std::runtime_error& ex)
     {
         std::cerr << ex.what();
