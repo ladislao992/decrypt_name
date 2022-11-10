@@ -34,3 +34,4 @@
 *.user
 .vs
 Build-OpenSSL-VC-32/
+Debug/

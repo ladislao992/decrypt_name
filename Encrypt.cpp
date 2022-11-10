@@ -99,7 +99,7 @@ void CalculateHash(const std::vector<unsigned char>& data, std::vector<unsigned 
 void Encrypt()
 {
     std::vector<unsigned char> plainText;
-    ReadFile("plain_text", plainText);
+    ReadFile("C:/3/decrypt_name/plain_text", plainText);
     
     std::vector<unsigned char> hash;
     CalculateHash(plainText, hash);
@@ -107,18 +107,63 @@ void Encrypt()
     std::vector<unsigned char> chipherText;
     EncryptAes(plainText, chipherText);
 
-    WriteFile("chipher_text", chipherText);
+    WriteFile("C:/3/decrypt_name/Chipher_text", chipherText);
 
-    AppendToFile("chipher_text", hash);
+    AppendToFile("C:/3/decrypt_name/Chipher_text", hash);
+}
+void DecryptAes(const std::vector<unsigned char> plainText, std::vector<unsigned char>& chipherText)
+{
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv))
+    {
+        throw std::runtime_error("DecryptInit error");
+    }
+
+    std::vector<unsigned char> chipherTextBuf(plainText.size() + AES_BLOCK_SIZE);
+    int chipherTextSize = 0;
+    if (!EVP_DecryptUpdate(ctx, &chipherTextBuf[0], &chipherTextSize, &plainText[0], plainText.size())) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw std::runtime_error("Decrypt error");
+    }
+
+    int lastPartLen = 0;
+    if (!EVP_DecryptFinal_ex(ctx, &chipherTextBuf[0] + chipherTextSize, &lastPartLen)) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw std::runtime_error("DecryptFinal error");
+    }
+    chipherTextSize += lastPartLen;
+    chipherTextBuf.erase(chipherTextBuf.begin() + chipherTextSize, chipherTextBuf.end());
+
+    chipherText.swap(chipherTextBuf);
+
+    EVP_CIPHER_CTX_free(ctx);
 }
 
+void Decrypt()
+{
+    std::vector<unsigned char> chipherText;
+    ReadFile("C:/3/decrypt_name/Chipher_text", chipherText);
+
+    std::vector<unsigned char> hash;
+    CalculateHash(chipherText, hash);
+
+    std::vector<unsigned char> plainText;
+    DecryptAes(chipherText, plainText);
+
+    WriteFile("C:/3/decrypt_name/plain_text2", plainText);
+
+
+}
 int main()
 {
     std::string pass = "pass";
     try
     {
+        OpenSSL_add_all_digests();
         PasswordToKey(pass);
+
         Encrypt();
+        Decrypt();
     }
     catch (const std::runtime_error& ex)
     {
