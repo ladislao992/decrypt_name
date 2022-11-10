@@ -33,4 +33,4 @@
 
 *.user
 .vs
-decrypt/
+Build-OpenSSL-VC-32/
